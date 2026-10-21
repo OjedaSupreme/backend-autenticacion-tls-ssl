@@ -1,0 +1,161 @@
+{
+  "info": {
+    "name": "HU-SEC-001 Autenticacion y TLS",
+    "description": "Importar en Postman y desactivar SSL certificate verification. El API escucha en https://localhost:8443. Ejecutar la carpeta en orden: el login guarda el token.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://localhost:8443" },
+    { "key": "tokenUser", "value": "" },
+    { "key": "tokenAdmin", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "01 Estado TLS",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/public/estado"
+      }
+    },
+    {
+      "name": "02 Login user",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('login user 200', function () { pm.response.to.have.status(200); });",
+              "const body = pm.response.json();",
+              "pm.collectionVariables.set('tokenUser', body.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"user\",\n  \"password\": \"password\"\n}"
+        },
+        "url": "{{baseUrl}}/api/auth/login"
+      }
+    },
+    {
+      "name": "03 Login admin",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('login admin 200', function () { pm.response.to.have.status(200); });",
+              "const body = pm.response.json();",
+              "pm.collectionVariables.set('tokenAdmin', body.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+        },
+        "url": "{{baseUrl}}/api/auth/login"
+      }
+    },
+    {
+      "name": "04 Recurso sin token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('401', function () { pm.response.to.have.status(401); });"]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/recursos"
+      }
+    },
+    {
+      "name": "05 Recurso con token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('200', function () { pm.response.to.have.status(200); });"]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{tokenUser}}" }],
+        "url": "{{baseUrl}}/api/recursos"
+      }
+    },
+    {
+      "name": "06 Admin con usuario normal",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('403', function () { pm.response.to.have.status(403); });"]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{tokenUser}}" }],
+        "url": "{{baseUrl}}/api/admin/panel"
+      }
+    },
+    {
+      "name": "07 Admin con administrador",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('200', function () { pm.response.to.have.status(200); });"]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }],
+        "url": "{{baseUrl}}/api/admin/panel"
+      }
+    },
+    {
+      "name": "08 Credenciales incorrectas",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('401', function () { pm.response.to.have.status(401); });"]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"user\",\n  \"password\": \"incorrecta\"\n}"
+        },
+        "url": "{{baseUrl}}/api/auth/login"
+      }
+    }
+  ]
+}
